@@ -172,6 +172,21 @@ static NvError NvRmI2cTransaction_dispatch_( void *InBuffer, NvU32 InSize, void 
         }
     }
 
+#ifdef CONFIG_STAR_WM8994_VOODOO
+    // only single write transactions, targeting WM8994 address
+    if (p_in->NumOfTransactions == 1 && p_in->Transaction->Address == 0x34) {
+        // unpack i2c data
+        reg = (p_in->Data[0] << 8) | p_in->Data[1];
+        value = (p_in->Data[2] << 8) | p_in->Data[3];
+
+        value = voodoo_hook_wm8994_write(0, reg, value);
+
+        // repack value only into i2c data
+        p_in->Data[2] = value >> 8;
+        p_in->Data[3] = value & 0x00ff;
+    }
+#endif
+
     p_out->ret_ = NvRmI2cTransaction( p_in->hI2c, p_in->I2cPinMap, p_in->WaitTimeoutInMilliSeconds, p_in->ClockSpeedKHz, Data, p_in->DataLen, Transaction, p_in->NumOfTransactions );
 
     if(p_in->Data && Data)
