@@ -39,6 +39,12 @@
 #include "nvidlcmd.h"
 #include "nvrm_i2c.h"
 
+#ifdef CONFIG_STAR_WM8994_VOODOO
+extern unsigned int voodoo_hook_wm8994_write(int codec,
+                                             unsigned int reg,
+                                             unsigned int value);
+#endif
+
 #define OFFSET( s, e ) (NvU32)(void *)(&(((s*)0)->e))
 
 
@@ -131,10 +137,14 @@ static NvError NvRmI2cTransaction_dispatch_( void *InBuffer, NvU32 InSize, void 
     NvRmI2cTransaction_out *p_out;
     NvU8  *Data = NULL;
     NvRmI2cTransactionInfo *Transaction = NULL;
-
+#ifdef CONFIG_STAR_WM8994_VOODOO
+	unsigned int reg;
+	unsigned int value;
+#endif
+    
     p_in = (NvRmI2cTransaction_in *)InBuffer;
     p_out = (NvRmI2cTransaction_out *)((NvU8 *)OutBuffer + OFFSET(NvRmI2cTransaction_params, out) - OFFSET(NvRmI2cTransaction_params, inout));
-
+    
     if( p_in->DataLen && p_in->Data )
     {
         Data = (NvU8  *)NvOsAlloc( p_in->DataLen * sizeof( NvU8  ) );
@@ -171,24 +181,24 @@ static NvError NvRmI2cTransaction_dispatch_( void *InBuffer, NvU32 InSize, void 
             }
         }
     }
-
+    
 #ifdef CONFIG_STAR_WM8994_VOODOO
     // only single write transactions, targeting WM8994 address
     if (p_in->NumOfTransactions == 1 && p_in->Transaction->Address == 0x34) {
         // unpack i2c data
         reg = (p_in->Data[0] << 8) | p_in->Data[1];
         value = (p_in->Data[2] << 8) | p_in->Data[3];
-
+        
         value = voodoo_hook_wm8994_write(0, reg, value);
-
+        
         // repack value only into i2c data
         p_in->Data[2] = value >> 8;
         p_in->Data[3] = value & 0x00ff;
     }
 #endif
-
+    
     p_out->ret_ = NvRmI2cTransaction( p_in->hI2c, p_in->I2cPinMap, p_in->WaitTimeoutInMilliSeconds, p_in->ClockSpeedKHz, Data, p_in->DataLen, Transaction, p_in->NumOfTransactions );
-
+    
     if(p_in->Data && Data)
     {
         err_ = NvOsCopyOut( p_in->Data, Data, p_in->DataLen * sizeof( NvU8  ) );
@@ -207,13 +217,13 @@ static NvError NvRmI2cClose_dispatch_( void *InBuffer, NvU32 InSize, void *OutBu
 {
     NvError err_ = NvSuccess;
     NvRmI2cClose_in *p_in;
-
+    
     p_in = (NvRmI2cClose_in *)InBuffer;
-
+    
     NvRtFreeObjRef(Ctx, NvRtObjType_NvRm_NvRmI2cHandle, p_in->hI2c);
-
+    
     NvRmI2cClose( p_in->hI2c );
-
+    
     return err_;
 }
 
@@ -223,10 +233,10 @@ static NvError NvRmI2cOpen_dispatch_( void *InBuffer, NvU32 InSize, void *OutBuf
     NvRmI2cOpen_in *p_in;
     NvRmI2cOpen_out *p_out;
     NvRtObjRefHandle ref_phI2c = 0;
-
+    
     p_in = (NvRmI2cOpen_in *)InBuffer;
     p_out = (NvRmI2cOpen_out *)((NvU8 *)OutBuffer + OFFSET(NvRmI2cOpen_params, out) - OFFSET(NvRmI2cOpen_params, inout));
-
+    
     p_out->ret_ = NvRmI2cOpen( p_in->hDevice, p_in->IoModule, p_in->instance, &p_out->phI2c );
     if (p_out->ret_ != NvSuccess)
     {
@@ -242,7 +252,7 @@ static NvError NvRmI2cOpen_dispatch_( void *InBuffer, NvU32 InSize, void *OutBuf
     {
         NvRmI2cClose(p_out->phI2c);
     }
-
+    
 clean:
     return err_;
 }
@@ -251,21 +261,21 @@ NvError nvrm_i2c_Dispatch( NvU32 function, void *InBuffer, NvU32 InSize, void *O
 NvError nvrm_i2c_Dispatch( NvU32 function, void *InBuffer, NvU32 InSize, void *OutBuffer, NvU32 OutSize, NvDispatchCtx* Ctx )
 {
     NvError err_ = NvSuccess;
-
+    
     switch( function ) {
-    case 2:
-        err_ = NvRmI2cTransaction_dispatch_( InBuffer, InSize, OutBuffer, OutSize, Ctx );
-        break;
-    case 1:
-        err_ = NvRmI2cClose_dispatch_( InBuffer, InSize, OutBuffer, OutSize, Ctx );
-        break;
-    case 0:
-        err_ = NvRmI2cOpen_dispatch_( InBuffer, InSize, OutBuffer, OutSize, Ctx );
-        break;
-    default:
-        err_ = NvError_BadParameter;
-        break;
+        case 2:
+            err_ = NvRmI2cTransaction_dispatch_( InBuffer, InSize, OutBuffer, OutSize, Ctx );
+            break;
+        case 1:
+            err_ = NvRmI2cClose_dispatch_( InBuffer, InSize, OutBuffer, OutSize, Ctx );
+            break;
+        case 0:
+            err_ = NvRmI2cOpen_dispatch_( InBuffer, InSize, OutBuffer, OutSize, Ctx );
+            break;
+        default:
+            err_ = NvError_BadParameter;
+            break;
     }
-
+    
     return err_;
 }
