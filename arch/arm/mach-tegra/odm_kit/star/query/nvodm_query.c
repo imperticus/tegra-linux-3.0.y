@@ -49,7 +49,7 @@
 #include "tegra_devkit_custopt.h"
 #include "nvodm_keylist_reserved.h"
 #include "nvrm_drf.h"
-#include <linux/kernel>
+#include <linux/kernel.h>
 
 #define NVODM_ENABLE_EMC_DVFS (1)
 
