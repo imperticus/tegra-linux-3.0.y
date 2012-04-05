@@ -49,6 +49,7 @@
 #include "tegra_devkit_custopt.h"
 #include "nvodm_keylist_reserved.h"
 #include "nvrm_drf.h"
+#include <linux/kernel>
 
 #define NVODM_ENABLE_EMC_DVFS (1)
 
@@ -1463,7 +1464,9 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
 NvU32 NvOdmQueryCarveoutSize(void)
 {
     //20100802  increase carveout memory
-    return 0x08000000; // 128 MB <- 64MB
+    extern unsigned int nvmap_carveout_size;
+    //return 0x08000000; // 128 MB <- 64MB
+    return nvmap_carveout_size;
 }
 
 NvU32 NvOdmQuerySecureRegionSize(void)

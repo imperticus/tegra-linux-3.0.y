@@ -3231,6 +3231,7 @@ fs_initcall(nvmap_dev_init);
  * init sequence, to allow kernel drivers access to nvmap before devfs
  * is initialized */
 #define NR_CARVEOUTS 2
+unsigned int nvmap_carveout_size = 0;
 static unsigned int nvmap_carveout_cmds = 0;
 static unsigned long nvmap_carveout_cmd_base[NR_CARVEOUTS];
 static unsigned long nvmap_carveout_cmd_size[NR_CARVEOUTS];
@@ -3307,6 +3308,8 @@ static int __init nvmap_heap_arg(char *options)
 	if (nvmap_carveout_cmds < ARRAY_SIZE(nvmap_carveout_cmd_size)) {
 		nvmap_carveout_cmd_base[nvmap_carveout_cmds] = start;
 		nvmap_carveout_cmd_size[nvmap_carveout_cmds] = size;
+        pr_info("%s: total carveout size=%d\n", __func__, size);
+        nvmap_carveout_size += size;
 		nvmap_carveout_cmds++;
 	}
 	return 0;
