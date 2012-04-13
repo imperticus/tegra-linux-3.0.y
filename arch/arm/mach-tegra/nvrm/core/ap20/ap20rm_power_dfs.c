@@ -30,6 +30,8 @@
  *
  */
 
+#include <linux/module.h>
+#include <linux/init.h>
 #include "ap20rm_power_dfs.h"
 #include "nvassert.h"
 #include "nvrm_drf.h"
@@ -430,17 +432,11 @@ NvRmPrivAp20GetPmRequest(
     // - use fixed values if they are defined explicitly, otherwise
     // - set CPU1 OffMax threshold at 2/3 of cpu frequency range,
     //   and half of that frequency as CPU1 OnMin threshold
-    if ((s_Cpu1OffMaxKHz == 0) && (s_Cpu1OnMinKHz == 0))
-    {
         NvRmFreqKHz MaxKHz =
             NvRmPrivGetSocClockLimits(NvRmModuleID_Cpu)->MaxKHz;
 
-        s_Cpu1OnMinKHz = NVRM_CPU1_ON_MIN_KHZ ?
-                         NVRM_CPU1_ON_MIN_KHZ : (MaxKHz / 3);
-        s_Cpu1OffMaxKHz = NVRM_CPU1_OFF_MAX_KHZ ?
-                          NVRM_CPU1_OFF_MAX_KHZ : (2 * MaxKHz / 3);
-        NV_ASSERT(s_Cpu1OnMinKHz < s_Cpu1OffMaxKHz);
-    }
+        s_Cpu1OnMinKHz = NVRM_CPU1_ON_MIN_KHZ;
+        s_Cpu1OffMaxKHz = NVRM_CPU1_OFF_MAX_KHZ;
 
     // Timestamp
     if (s_pTimerUs == NULL)
